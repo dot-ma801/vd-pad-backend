@@ -8,6 +8,7 @@ import { serve } from "@hono/node-server";
 import chardet from "chardet";
 import iconv from "iconv-lite";
 import { cors } from "hono/cors";
+import { load as loadHtml } from "cheerio";
 
 const app = new Hono();
 
@@ -78,9 +79,29 @@ app.post("/import-script", async (c) => {
       return c.json({ error: "Failed to parse content" }, 500);
     }
 
+    // --- 改行保持処理 ---
+    // HTMLをcheerioで読み込み
+    const $ = loadHtml(article.content);
+    // <br> を改行に置換
+    $("br").replaceWith("\n");
+    // <p> を段落扱い（末尾に改行2つ）
+    $("p").each((_, el) => {
+      const text = $(el).text();
+      $(el).replaceWith(text + "\n\n");
+    });
+    // プレーンテキスト化
+    let plainText = $.root().text();
+    // 改行コード統一（\r\n, \r → \n）
+    plainText = plainText.replace(/\r\n|\r/g, "\n");
+    // 連続する3つ以上の改行は最大2つに圧縮
+    plainText = plainText.replace(/\n{3,}/g, "\n\n");
+
     return c.json({
       title: article.title,
-      content: article.textContent,
+      htmlContent: article.content, // 元のHTML本文
+      textContent: plainText, // 改行保持したプレーンテキスト
+      length: plainText.length,
+      sourceUrl: url,
     });
   } catch (err) {
     return c.json({ error: " err.message" }, 500);
