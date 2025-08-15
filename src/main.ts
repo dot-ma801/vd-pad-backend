@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
-import { registerImportScriptRoute } from "./interfaces/controllers/importScriptController";
+import { registerImportScriptRoute } from "@/interfaces/controllers/importScriptController";
 
 const app = new Hono();
 
